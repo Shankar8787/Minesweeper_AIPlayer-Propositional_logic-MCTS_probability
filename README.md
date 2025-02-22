@@ -20,6 +20,8 @@ We represent AI knowledge using the Sentence class. Each sentence contains a set
 
 The MinesweeperAI class maintains the AI's knowledge and performs inferences based on that knowledge. The class keeps track of safe cells, known mines, and moves made. The AI uses logical deductions to make safe moves whenever possible.
 
+## Monte Carlo Propability determination for random move
+
 ## Getting Started
 
 To play Minesweeper or let the AI play for you:
