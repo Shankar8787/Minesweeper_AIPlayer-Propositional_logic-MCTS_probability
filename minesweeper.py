@@ -8,7 +8,7 @@ class Minesweeper():
     Minesweeper game representation
     """
 
-    def __init__(self, height=4, width=4, mines=2):
+    def __init__(self, height=8, width=8, mines=5):
 
         # Set initial width, height, and number of mines
         self.height = height

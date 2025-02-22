@@ -4,9 +4,9 @@ import time
 
 from minesweeper import Minesweeper, MinesweeperAI
 
-HEIGHT = 4
-WIDTH = 4
-MINES = 2
+HEIGHT = 8
+WIDTH = 8
+MINES = 5
 
 # Colors
 BLACK = (0, 0, 0)
@@ -25,7 +25,7 @@ mediumFont = pygame.font.Font(OPEN_SANS, 18)
 largeFont = pygame.font.Font(OPEN_SANS, 20)
 
 # Compute board size
-BOARD_PADDING = 20
+BOARD_PADDING = 10
 board_width = ((2 / 3) * width) - (BOARD_PADDING * 2)
 board_height = height - (BOARD_PADDING * 2)
 cell_size = int(min(board_width / WIDTH, board_height / HEIGHT))
