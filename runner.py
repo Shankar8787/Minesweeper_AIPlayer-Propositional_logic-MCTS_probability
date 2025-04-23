@@ -131,6 +131,17 @@ while True:
             row.append(rect)
         cells.append(row)
 
+    # AI Play 100 games button
+    ai100Play = pygame.Rect(
+        (2 / 3) * width + BOARD_PADDING, (1 / 3) * height + 200,
+        (width / 3) - BOARD_PADDING * 1, 50
+    )
+    buttonText = mediumFont.render("AIPlay-100 Games", True, BLACK)
+    buttonRect = buttonText.get_rect()
+    buttonRect.center = ai100Play.center
+    pygame.draw.rect(screen, WHITE, ai100Play)
+    screen.blit(buttonText, buttonRect)
+
     # AI Play button
     aiPlay = pygame.Rect(
         (2 / 3) * width + BOARD_PADDING, (1 / 3) * height - 130,
@@ -212,6 +223,7 @@ while True:
                     if move is None:
                         flags = ai.mines.copy()
                         print("No moves left to make.")
+                        break
                     else:
                         print("No known safe moves, AI making random move.")
                 else:
@@ -227,7 +239,42 @@ while True:
                 pygame.display.flip()
                 time.sleep(0.2)
 
-        # Reset game state
+        elif ai100Play.collidepoint(mouse) :
+            ai_wins = 0
+            for i in range(100):
+                game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES)
+                ai = MinesweeperAI(height=HEIGHT, width=WIDTH)
+                revealed = set()
+                flags = set()
+                lost = False
+                while not lost:
+                    move = ai.make_safe_move()
+                    if move is None:
+                        move = ai.make_random_move()
+                        if move is None:
+                            flags = ai.mines.copy()
+                            print("No moves left to make.")
+                            break
+                        else:
+                            print("No known safe moves, AI making random move.")
+                    else:
+                        print("AI making safe move.")
+                    if move:
+                        if game.is_mine(move):
+                            lost = True
+                        else:
+                            nearby = game.nearby_mines(move)
+                            revealed.add(move)
+                            ai.add_knowledge(move, nearby)
+
+                if not lost:
+                    ai_wins += 1
+
+            print(f"AI won {ai_wins} out of 100 games.")
+            time.sleep(1)
+
+
+                    # Reset game state
         elif resetButton.collidepoint(mouse):
             game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES)
             ai = MinesweeperAI(height=HEIGHT, width=WIDTH)
