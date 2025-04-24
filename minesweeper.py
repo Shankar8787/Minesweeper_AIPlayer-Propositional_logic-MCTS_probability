@@ -8,11 +8,13 @@ class Minesweeper():
     Minesweeper game representation
     """
 
-    def __init__(self, height=8, width=8, mines=5):
+    def __init__(self, height=8, width=8, mines=5,safe_cell=(3, 3)):
 
         # Set initial width, height, and number of mines
         self.height = height
         self.width = width
+        self.total_mines = mines
+        self.safe_cell = safe_cell
         self.mines = set()
 
         # Initialize an empty field with no mines
@@ -24,12 +26,14 @@ class Minesweeper():
             self.board.append(row)
 
         # Add mines randomly
-        while len(self.mines) != mines:
+        while len(self.mines) < self.total_mines:
             i = random.randrange(height)
             j = random.randrange(width)
-            if not self.board[i][j]:
+
+            if (i, j) != self.safe_cell and not self.board[i][j]:
                 self.mines.add((i, j))
                 self.board[i][j] = True
+
 
         # At first, player has found no mines
         self.mines_found = set()
@@ -203,9 +207,12 @@ class MinesweeperAI:
 
         move_scores = {move: 0 for move in choices}
         simulations = 100
+        num_mines = len(self.mines)
 
         for move in choices:
             for _ in range(simulations):
+                if len(choices) < num_mines:
+                    continue
                 simulated_mines = random.sample(choices, len(self.mines))
                 if move not in simulated_mines:
                     move_scores[move] += 1

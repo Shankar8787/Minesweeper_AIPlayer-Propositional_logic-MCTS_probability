@@ -7,6 +7,7 @@ from minesweeper import Minesweeper, MinesweeperAI
 HEIGHT = 8
 WIDTH = 8
 MINES = 5
+SAFE_Cell = (3, 3)
 
 # Colors
 BLACK = (0, 0, 0)
@@ -38,7 +39,7 @@ mine = pygame.image.load("assets/images/mine.png")
 mine = pygame.transform.scale(mine, (cell_size, cell_size))
 
 # Create game and AI agent
-game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES)
+game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES, safe_cell=SAFE_Cell)
 ai = MinesweeperAI(height=HEIGHT, width=WIDTH)
 
 # Keep track of revealed cells, flagged cells, and if a mine was hit
@@ -183,6 +184,7 @@ while True:
     screen.blit(text, textRect)
 
     move = None
+    first_move_done = False
 
     left, _, right = pygame.mouse.get_pressed()
 
@@ -203,9 +205,18 @@ while True:
 
         # If AI button clicked, make an AI move
         if aiButton.collidepoint(mouse) and not lost:
-            move = ai.make_safe_move()
+            if not first_move_done:
+                move = SAFE_Cell
+                print("First Move.")
+                first_move_done = True
+            else:
+                move = ai.make_safe_move()
             if move is None:
-                move = ai.make_random_move()
+                if not first_move_done:
+                    move = SAFE_Cell
+                    first_move_done = True
+                else:
+                    move = ai.make_random_move()
                 if move is None:
                     flags = ai.mines.copy()
                     print("No moves left to make.")
@@ -217,7 +228,12 @@ while True:
 
         elif aiPlay.collidepoint(mouse) and not lost:
             while not lost:
-                move = ai.make_safe_move()
+                if not first_move_done:
+                    move = SAFE_Cell
+                    print("First Move.")
+                    first_move_done = True
+                else:
+                    move = ai.make_safe_move()
                 if move is None:
                     move = ai.make_random_move()
                     if move is None:
@@ -248,7 +264,12 @@ while True:
                 flags = set()
                 lost = False
                 while not lost:
-                    move = ai.make_safe_move()
+                    if not first_move_done:
+                        move = SAFE_Cell
+                        print("First Move.")
+                        first_move_done = True
+                    else:
+                        move = ai.make_safe_move()
                     if move is None:
                         move = ai.make_random_move()
                         if move is None:
@@ -269,7 +290,7 @@ while True:
 
                 if not lost:
                     ai_wins += 1
-
+                first_move_done = False
             print(f"AI won {ai_wins} out of 100 games.")
             time.sleep(1)
 
