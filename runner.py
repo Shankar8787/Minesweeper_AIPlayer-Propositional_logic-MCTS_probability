@@ -241,9 +241,9 @@ while True:
                         print("No moves left to make.")
                         break
                     else:
-                        print("No known safe moves, AI making random move.")
+                        print("No known safe moves, AI making random move.",move)
                 else:
-                    print("AI making safe move.")
+                    print("AI making safe move.", move)
                 if move:
                     if game.is_mine(move):
                         lost = True
@@ -257,6 +257,7 @@ while True:
 
         elif ai100Play.collidepoint(mouse) :
             ai_wins = 0
+            counter = 0
             for i in range(100):
                 game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES)
                 ai = MinesweeperAI(height=HEIGHT, width=WIDTH)
@@ -272,17 +273,21 @@ while True:
                         move = ai.make_safe_move()
                     if move is None:
                         move = ai.make_random_move()
+
                         if move is None:
                             flags = ai.mines.copy()
                             print("No moves left to make.")
                             break
                         else:
+
                             print("No known safe moves, AI making random move.")
+
                     else:
                         print("AI making safe move.")
                     if move:
                         if game.is_mine(move):
                             lost = True
+                            print("AI Lost ------------------------------")
                         else:
                             nearby = game.nearby_mines(move)
                             revealed.add(move)
@@ -290,7 +295,9 @@ while True:
 
                 if not lost:
                     ai_wins += 1
+                    print(counter)
                 first_move_done = False
+                counter += 1
             print(f"AI won {ai_wins} out of 100 games.")
             time.sleep(1)
 
@@ -317,6 +324,7 @@ while True:
     if move:
         if game.is_mine(move):
             lost = True
+            print("AI Lost ------------------------------")
         else:
             nearby = game.nearby_mines(move)
             revealed.add(move)

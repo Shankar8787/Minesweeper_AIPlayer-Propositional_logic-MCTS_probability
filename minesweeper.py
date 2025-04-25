@@ -1,6 +1,7 @@
 import itertools
 import random
 from itertools import product
+import math
 
 
 class Minesweeper():
@@ -198,6 +199,7 @@ class MinesweeperAI:
         safe_choices = self.safe_moves - self.moves_made
         return random.choice(tuple(safe_choices)) if safe_choices else None
 
+
     def make_random_move(self):
         choices = [(i, j) for i, j in product(range(self.height), range(self.width))
                    if (i, j) not in self.moves_made and (i, j) not in self.mines]
@@ -206,16 +208,24 @@ class MinesweeperAI:
             return None
 
         move_scores = {move: 0 for move in choices}
-        simulations = 100
+        simulations = 1000
         num_mines = len(self.mines)
 
         for move in choices:
+
+            # Simulation-based scoring
             for _ in range(simulations):
-                if len(choices) < num_mines:
-                    continue
-                simulated_mines = random.sample(choices, len(self.mines))
+                if len(choices) <= num_mines:
+                    return None
+                elif len(choices) <= 10:
+                    print("Choices are less than 10")
+                    #Add code to update the knowledge to locate more mines before a move
+                simulated_mines = random.sample(choices, num_mines)
                 if move not in simulated_mines:
                     move_scores[move] += 1
+
+            # Add weighted proximity bonus to score
+            #move_scores[move] += proximity_bonus * 100  # Weight can be tuned
 
         best_move = max(move_scores, key=move_scores.get)
         return best_move
