@@ -253,7 +253,7 @@ while True:
         elif ai100Play.collidepoint(mouse) :
             ai_wins = 0
             counter = 0
-            for i in range(1000):
+            for i in range(100):
                 game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES)
                 ai = MinesweeperAI(height=HEIGHT, width=WIDTH, mines=MINES)
                 revealed = set()
@@ -284,7 +284,7 @@ while True:
                     print(counter)
                 first_move_done = False
                 counter += 1
-            print(f"AI won {ai_wins} out of 1000 games.")
+            print(f"AI won {ai_wins} out of 100 games.")
             time.sleep(1)
 
 
