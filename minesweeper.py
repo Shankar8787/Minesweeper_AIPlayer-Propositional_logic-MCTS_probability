@@ -148,11 +148,12 @@ def mark_safe(self, cell):
 
 
 class MinesweeperAI:
-    def __init__(self, height, width):
+    def __init__(self, height, width, mines):
         self.height = height
         self.width = width
         self.moves_made = set()
         self.mines = set()
+        self.total_mines = mines
         self.safe_moves = set()
         self.knowledge = []
 
@@ -195,39 +196,256 @@ class MinesweeperAI:
                     self.knowledge.remove((sentence, count))
                     updated = True
 
+    def csp_move(self):
+        safes = set()
+        mines = set()
+
+        # 1. Direct inference: safe or mine from known counts
+        for sentence, count in self.knowledge:
+            if count == 0:
+                safes.update(sentence)
+            elif len(sentence) == count:
+                mines.update(sentence)
+
+        # 2. Subset inference: If one sentence subset of another
+        for (s1, c1) in self.knowledge:
+            for (s2, c2) in self.knowledge:
+                if s1 == s2:
+                    continue
+                if s1.issubset(s2):
+                    new_cells = s2 - s1
+                    new_count = c2 - c1
+                    if new_count == 0:
+                        safes.update(new_cells)
+                    elif len(new_cells) == new_count:
+                        mines.update(new_cells)
+
+        # 3. Mark inferred safes/mines immediately
+        newly_safe = safes - self.moves_made - self.safe_moves
+        newly_mine = mines - self.moves_made - self.mines
+
+        for cell in newly_safe:
+            self.mark_safe(cell)
+
+        for cell in newly_mine:
+            self.mark_mine(cell)
+
+        # 4. Update knowledge base after inference
+        self.update_knowledge()
+
+        # 5. Return a new safe move if available
+        available_safes = self.safe_moves - self.moves_made
+        if available_safes:
+            move = available_safes.pop()
+            print("CSP Move: Found logical safe move:", move)
+            return move
+
+        return None
+
+
     def make_safe_move(self):
         safe_choices = self.safe_moves - self.moves_made
         return random.choice(tuple(safe_choices)) if safe_choices else None
 
-
-    def make_random_move(self):
-        choices = [(i, j) for i, j in product(range(self.height), range(self.width))
-                   if (i, j) not in self.moves_made and (i, j) not in self.mines]
-
-        if not choices:
+    def bayesian_inference(self, unrevealed):
+        """
+        Use Bayesian inference when few choices remain.
+        """
+        if not unrevealed:
             return None
 
-        move_scores = {move: 0 for move in choices}
-        simulations = 1000
-        num_mines = len(self.mines)
+        total_mines_left = self.total_mines - len(self.mines)
+        prior = total_mines_left / len(unrevealed)
 
-        for move in choices:
+        cell_probs = {cell: prior for cell in unrevealed}
 
-            # Simulation-based scoring
-            for _ in range(simulations):
-                if len(choices) <= num_mines:
-                    return None
-                elif len(choices) <= 10:
-                    print("Choices are less than 10")
-                    #Add code to update the knowledge to locate more mines before a move
-                simulated_mines = random.sample(choices, num_mines)
-                if move not in simulated_mines:
-                    move_scores[move] += 1
+        # Adjust probabilities based on known knowledge
+        for sentence, count in self.knowledge:
+            if not sentence:
+                continue
 
-            # Add weighted proximity bonus to score
-            #move_scores[move] += proximity_bonus * 100  # Weight can be tuned
+            unknown_cells = sentence - self.mines - self.safe_moves
+            if not unknown_cells:
+                continue
 
-        best_move = max(move_scores, key=move_scores.get)
+            likelihood = count / len(unknown_cells)
+            for cell in unknown_cells:
+                cell_probs[cell] = (cell_probs[cell] + likelihood) / 2
+
+        safest_cell = min(cell_probs, key=lambda cell: cell_probs[cell])
+        print(cell_probs[safest_cell])
+        if cell_probs[safest_cell] >=0.6:
+            return None
+        else:
+            return safest_cell
+
+    def monte_carlo_search(self, unrevealed, simulations=10000):
+        """
+        Use Monte Carlo simulations to estimate mine probabilities.
+        """
+        if not unrevealed:
+            return None
+
+        move_scores = {cell: 0 for cell in unrevealed}
+        mines_left = self.total_mines - len(self.mines)
+
+        for _ in range(simulations):
+            simulated_mines = set(random.sample(unrevealed, mines_left))
+            for cell in unrevealed:
+                if cell not in simulated_mines:
+                    move_scores[cell] += 1
+
+        safest_cell = max(move_scores, key=lambda cell: move_scores[cell])
+        return safest_cell
+
+    def infer_overlap_mines(self):
+        """
+        Try to find certain mines by analyzing overlaps between nearby revealed cells.
+        Only called when few cells remain and mines are still missing.
+        """
+
+        new_mines = set()
+
+        # Compare all sentences with each other
+        for (cells1, count1) in self.knowledge:
+            for (cells2, count2) in self.knowledge:
+                if cells1 == cells2:
+                    continue
+
+                # If one sentence is subset of another
+                if cells1.issubset(cells2):
+                    diff_cells = cells2 - cells1
+                    diff_count = count2 - count1
+
+                    if diff_count == len(diff_cells):
+                        # All different cells must be mines
+                        new_mines.update(diff_cells)
+
+        # Mark the inferred mines
+        for cell in new_mines:
+            self.mark_mine(cell)
+
+        if new_mines:
+            print(f"Inferred mines from overlap logic: {new_mines}")
+
+    def low_risk_nearby_move(self):
+        """
+        Pick a low-risk move based on nearby clues,
+        after first trying to infer more mines from overlaps.
+        """
+
+        unrevealed = [(i, j) for i in range(self.height) for j in range(self.width)
+                      if (i, j) not in self.moves_made and (i, j) not in self.mines]
+
+        if len(unrevealed) > 10 or len(self.mines) >= self.total_mines:
+            return None
+
+        # FIRST: Try to infer mines if possible
+        self.infer_overlap_mines()
+
+        risk_scores = dict()
+
+        for cell in unrevealed:
+            risk = 0
+
+            # Check all 8 neighbors
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    if dx == 0 and dy == 0:
+                        continue
+                    ni, nj = cell[0] + dx, cell[1] + dy
+                    if 0 <= ni < self.height and 0 <= nj < self.width:
+                        neighbor = (ni, nj)
+
+                        for sentence, count in self.knowledge:
+                            if neighbor in sentence:
+                                # Adjust for found mines
+                                known_mines = len([c for c in sentence if c in self.mines])
+                                adjusted_count = max(count - known_mines, 0)
+
+                                remaining_cells = len(sentence) - len(
+                                    [c for c in sentence if c in self.safe_moves or c in self.mines])
+
+                                if remaining_cells > 0:
+                                    risk += adjusted_count / remaining_cells
+
+            risk_scores[cell] = risk
+
+        if not risk_scores:
+            return None
+
+        best_move = min(risk_scores, key=risk_scores.get)
+        print(
+            f"Choosing low-risk move after overlap inference: {best_move} with risk score {risk_scores[best_move]:.2f}")
         return best_move
 
+    def make_random_move(self):
+        """
+        Makes a move:
+        - If choices <= 10, use Bayesian Inference.
+        - Else, use Monte Carlo search.
+        """
+        unrevealed = [(i, j) for i in range(self.height) for j in range(self.width)
+                      if (i, j) not in self.moves_made and (i, j) not in self.mines]
 
+        if not unrevealed:
+            return None
+        if self.mines == self.total_mines:
+            return None
+        print(f"Few choices left ({len(unrevealed)}). Using Bayesian Inference.")
+        return self.bayesian_inference(unrevealed)
+
+
+
+    def choose_move(self):
+        """
+        Smart move selector:
+        1. Safe moves
+        2. CSP-based logical inference
+        3. Bayesian inference if few choices
+        4. Monte Carlo search otherwise
+        """
+
+        # 1. Try a known safe move first
+        move = self.make_safe_move()
+        if move:
+            print("Choosing known safe move:", move)
+            return move
+
+        # 2. Try CSP logical inference
+        move = self.csp_move()
+        if move:
+            print("Choosing CSP logical move:", move)
+            return move
+
+        # 3. Prepare unrevealed cells
+        unrevealed = [(i, j) for i in range(self.height) for j in range(self.width)
+                      if (i, j) not in self.moves_made and (i, j) not in self.mines]
+
+        if not unrevealed or unrevealed == self.total_mines:
+            return None
+
+        # # 4. If few cells left, use low risk nearby move
+        # if len(unrevealed) <= 10:
+        #     move = self.low_risk_nearby_move()
+        #     if move:
+        #         print(f"Choosing low risk nearby move from {len(unrevealed)} options:", move)
+        #         return move
+
+        # FIRST: Try to infer mines if possible
+        if len(unrevealed) <= 10:
+            self.infer_overlap_mines()
+
+        # 5. Else use bayesian inference
+        move = self.bayesian_inference(unrevealed)
+        if move:
+            print(f"Choosing Bayesian move from {len(unrevealed)} options:", move)
+            return move
+
+        # 6. Else use Monte Carlo search
+        move = self.monte_carlo_search(unrevealed)
+        if move:
+            print("Choosing Monte Carlo move:", move)
+            return move
+
+        return None  # No move possible
