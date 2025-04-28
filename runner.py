@@ -70,10 +70,12 @@ while True:
 
         # Rules
         rules = [
-            "Click a cell to reveal it.",
-            "click a cell to mark it as a clue.",
-            "avoid all mines!",
-            "Mark all clues successfully to win!",
+            "Click AI Play to start..",
+            "AI makes a safe first move.",
+            "It plays using logic to avoid mines.",
+            "If stuck, it uses probability to pick a safe cell.",
+            "Game results are shown at the end. ",
+            "Reset to play again."
         ]
         for i, rule in enumerate(rules):
             line = (largeFont.render(rule, True, WHITE))
@@ -154,17 +156,6 @@ while True:
     pygame.draw.rect(screen, WHITE, aiPlay)
     screen.blit(buttonText, buttonRect)
 
-    # AI Move button
-    # aiButton = pygame.Rect(
-    #     (2 / 3) * width + BOARD_PADDING, (1 / 3) * height - 50,
-    #     (width / 3) - BOARD_PADDING * 2, 50
-    # )
-    # buttonText = mediumFont.render("AI Move", True, BLACK)
-    # buttonRect = buttonText.get_rect()
-    # buttonRect.center = aiButton.center
-    # pygame.draw.rect(screen, WHITE, aiButton)
-    # screen.blit(buttonText, buttonRect)
-
     # Reset button
     resetButton = pygame.Rect(
         (2 / 3) * width + BOARD_PADDING, (1 / 3) * height + 20,
@@ -203,36 +194,13 @@ while True:
     elif left == 1:
         mouse = pygame.mouse.get_pos()
 
-        # # If AI button clicked, make an AI move
-        # if aiButton.collidepoint(mouse) and not lost:
-        #     if not first_move_done:
-        #         move = SAFE_Cell
-        #         print("First Move.")
-        #         first_move_done = True
-        #     else:
-        #         move = ai.make_safe_move()
-        #     if move is None:
-        #         if not first_move_done:
-        #             move = SAFE_Cell
-        #             first_move_done = True
-        #         else:
-        #             move = ai.make_random_move()
-        #         if move is None:
-        #             flags = ai.mines.copy()
-        #             print("No moves left to make.")
-        #         else:
-        #             print("No known safe moves, AI making random move.")
-        #     else:
-        #         print("AI making safe move.")
-        #     time.sleep(0.2)
-
         if aiPlay.collidepoint(mouse) and not lost:
                 while not lost:
                     if not first_move_done:
                         move = SAFE_Cell
                         print("First Move.")
                         first_move_done = True
-                    if first_move_done:
+                    elif first_move_done:
                         move = ai.choose_move()
                     if move is None:
                         flags = ai.mines.copy()
@@ -250,6 +218,7 @@ while True:
                 pygame.display.flip()
                 time.sleep(0.2)
 
+        #If AIPlay-100 clicked, make an AI move
         elif ai100Play.collidepoint(mouse) :
             ai_wins = 0
             counter = 0
@@ -264,7 +233,7 @@ while True:
                         move = SAFE_Cell
                         print("First Move.")
                         first_move_done = True
-                    if first_move_done:
+                    elif first_move_done:
                         move = ai.choose_move()
                     if move is None:
                         flags = ai.mines.copy()
@@ -288,7 +257,7 @@ while True:
             time.sleep(1)
 
 
-                    # Reset game state
+        # Reset game state
         elif resetButton.collidepoint(mouse):
             game = Minesweeper(height=HEIGHT, width=WIDTH, mines=MINES)
             ai = MinesweeperAI(height=HEIGHT, width=WIDTH,mines=MINES)
@@ -297,24 +266,6 @@ while True:
             lost = False
             continue
 
-        # User-made move
-        elif not lost:
-            for i in range(HEIGHT):
-                for j in range(WIDTH):
-                    if (cells[i][j].collidepoint(mouse)
-                            and (i, j) not in flags
-                            and (i, j) not in revealed):
-                        move = (i, j)
-
-    # Make move and update AI knowledge
-    if move:
-        if game.is_mine(move):
-            lost = True
-            print("AI Lost ------------------------------")
-        else:
-            nearby = game.nearby_mines(move)
-            revealed.add(move)
-            ai.add_knowledge(move, nearby)
 
     pygame.display.flip()
 

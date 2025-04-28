@@ -196,18 +196,23 @@ class MinesweeperAI:
                     self.knowledge.remove((sentence, count))
                     updated = True
 
+
+    def make_safe_move(self):
+        safe_choices = self.safe_moves - self.moves_made
+        return random.choice(tuple(safe_choices)) if safe_choices else None
+
     def csp_move(self):
         safes = set()
         mines = set()
 
-        # 1. Direct inference: safe or mine from known counts
+        #Direct inference: safe or mine from known counts
         for sentence, count in self.knowledge:
             if count == 0:
                 safes.update(sentence)
             elif len(sentence) == count:
                 mines.update(sentence)
 
-        # 2. Subset inference: If one sentence subset of another
+        #Subset inference: If one sentence subset of another
         for (s1, c1) in self.knowledge:
             for (s2, c2) in self.knowledge:
                 if s1 == s2:
@@ -220,7 +225,7 @@ class MinesweeperAI:
                     elif len(new_cells) == new_count:
                         mines.update(new_cells)
 
-        # 3. Mark inferred safes/mines immediately
+        #Mark inferred safes/mines immediately
         newly_safe = safes - self.moves_made - self.safe_moves
         newly_mine = mines - self.moves_made - self.mines
 
@@ -230,10 +235,10 @@ class MinesweeperAI:
         for cell in newly_mine:
             self.mark_mine(cell)
 
-        # 4. Update knowledge base after inference
+        #Update knowledge base after inference
         self.update_knowledge()
 
-        # 5. Return a new safe move if available
+        #Return a new safe move if available
         available_safes = self.safe_moves - self.moves_made
         if available_safes:
             move = available_safes.pop()
@@ -243,9 +248,63 @@ class MinesweeperAI:
         return None
 
 
-    def make_safe_move(self):
-        safe_choices = self.safe_moves - self.moves_made
-        return random.choice(tuple(safe_choices)) if safe_choices else None
+    def infer_overlap_mines(self):
+        """
+        Try to find certain mines by analyzing overlaps between nearby revealed cells.
+        Only called when few cells remain and mines are still missing.
+        """
+
+        new_mines = set()
+
+        # Compare all sentences with each other
+        for (cells1, count1) in self.knowledge:
+            for (cells2, count2) in self.knowledge:
+                if cells1 == cells2:
+                    continue
+
+                # If one sentence is subset of another
+                if cells1.issubset(cells2):
+                    diff_cells = cells2 - cells1
+                    diff_count = count2 - count1
+
+                    if diff_count == len(diff_cells):
+                        # All different cells must be mines
+                        new_mines.update(diff_cells)
+
+        # Mark the inferred mines
+        for cell in new_mines:
+            self.mark_mine(cell)
+
+        if new_mines:
+            print(f"Inferred mines from overlap logic: {new_mines}")
+
+    def overlapping_mine(self):
+        """
+        Find an unrevealed cell adjacent to a known mine where the nearby knowledge count is 1.
+        """
+
+        unrevealed = [
+            (i, j) for i in range(self.height) for j in range(self.width)
+            if (i, j) not in self.moves_made and (i, j) not in self.mines
+        ]
+
+        for cell in unrevealed:
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    if dx == 0 and dy == 0:
+                        continue
+                    ni, nj = cell[0] + dx, cell[1] + dy
+                    neighbor = (ni, nj)
+
+                    if 0 <= ni < self.height and 0 <= nj < self.width:
+                        if neighbor in self.mines:
+                            # Check knowledge about the neighbor
+                            for sentence, count in self.knowledge:
+                                if neighbor in sentence and count == 1:
+                                    print(f"Overlapping mine move found: {cell}")
+                                    return cell
+
+        return None
 
     def bayesian_inference(self, unrevealed):
         """
@@ -347,90 +406,20 @@ class MinesweeperAI:
         safest_cell = max(move_scores, key=lambda cell: move_scores[cell])
         return safest_cell
 
-    def infer_overlap_mines(self):
-        """
-        Try to find certain mines by analyzing overlaps between nearby revealed cells.
-        Only called when few cells remain and mines are still missing.
-        """
-
-        new_mines = set()
-
-        # Compare all sentences with each other
-        for (cells1, count1) in self.knowledge:
-            for (cells2, count2) in self.knowledge:
-                if cells1 == cells2:
-                    continue
-
-                # If one sentence is subset of another
-                if cells1.issubset(cells2):
-                    diff_cells = cells2 - cells1
-                    diff_count = count2 - count1
-
-                    if diff_count == len(diff_cells):
-                        # All different cells must be mines
-                        new_mines.update(diff_cells)
-
-        # Mark the inferred mines
-        for cell in new_mines:
-            self.mark_mine(cell)
-
-        if new_mines:
-            print(f"Inferred mines from overlap logic: {new_mines}")
-
-    def overlapping_mine(self):
-        """
-        Find an unrevealed cell adjacent to a known mine where the nearby knowledge count is 1.
-        """
-
-        unrevealed = [
-            (i, j) for i in range(self.height) for j in range(self.width)
-            if (i, j) not in self.moves_made and (i, j) not in self.mines
-        ]
-
-        for cell in unrevealed:
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    if dx == 0 and dy == 0:
-                        continue
-                    ni, nj = cell[0] + dx, cell[1] + dy
-                    neighbor = (ni, nj)
-
-                    if 0 <= ni < self.height and 0 <= nj < self.width:
-                        if neighbor in self.mines:
-                            # Check knowledge about the neighbor
-                            for sentence, count in self.knowledge:
-                                if neighbor in sentence and count == 1:
-                                    print(f"Overlapping mine move found: {cell}")
-                                    return cell
-
-        return None
-
-
-    def make_random_move(self):
-        """
-        Makes a move:
-        - If choices <= 10, use Bayesian Inference.
-        - Else, use Monte Carlo search.
-        """
-        unrevealed = [(i, j) for i in range(self.height) for j in range(self.width)
-                      if (i, j) not in self.moves_made and (i, j) not in self.mines]
-
-        if not unrevealed:
-            return None
-        if self.mines == self.total_mines:
-            return None
-        print(f"Few choices left ({len(unrevealed)}). Using Bayesian Inference.")
-        return self.bayesian_inference(unrevealed)
-
 
 
     def choose_move(self):
         """
-        Smart move selector:
-        1. Safe moves
-        2. CSP-based logical inference
-        3. Bayesian inference if few choices
-        4. Monte Carlo search otherwise
+        AI Agent:
+        Logical moves
+            1. Safe moves - propositional logic
+            2. CSP-based logical inference
+        If no unrevealed cell or unrevealed cell+mines = total Mines the return None
+            3. overlapping mine - Infer more mines using overlap neighbors and return safe by using it
+        If no unrevealed cell or unrevealed cell+mines = total Mines the return None
+        Probability move when no logical move exist
+            1. Bayesian inference and return none when probability is high
+            2. Monte Carlo search return cell after 10000 simulation
         """
 
         # 1. Try a known safe move first
@@ -452,18 +441,22 @@ class MinesweeperAI:
         print(len(unrevealed), len(self.mines))
 
         if not unrevealed or len(unrevealed)+len(self.mines) == self.total_mines:
+            for cell in unrevealed:
+                self.mines.add(cell)
             return None
 
         # 4. If few cells left, use low risk nearby move
-        if len(unrevealed) <= 10:
-            # FIRST: Try to infer mines if possible
-            self.infer_overlap_mines()
-            move = self.overlapping_mine()
-            if move:
-                print(f"Choosing low risk nearby move from {len(unrevealed)} options:", move)
-                return move
 
-        if not unrevealed or unrevealed == self.total_mines:
+        # FIRST: Try to infer mines if possible
+        self.infer_overlap_mines()
+        move = self.overlapping_mine()
+        if move:
+            print(f"Choosing low risk nearby move from {len(unrevealed)} options:", move)
+            return move
+
+        if not unrevealed or len(unrevealed)+len(self.mines) == self.total_mines:
+            for cell in unrevealed:
+                self.mines.add(cell)
             return None
 
         # 5. Else use bayesian inference
