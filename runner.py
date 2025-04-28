@@ -6,7 +6,7 @@ from minesweeper import Minesweeper, MinesweeperAI
 
 HEIGHT = 8
 WIDTH = 8
-MINES = 5
+MINES = 8
 SAFE_Cell = (3, 3)
 
 # Colors
