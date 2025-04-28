@@ -70,7 +70,7 @@ while True:
 
         # Rules
         rules = [
-            "Click AI Play to start..",
+            "Click AI Play to start.",
             "AI makes a safe first move.",
             "It plays using logic to avoid mines.",
             "If stuck, it uses probability to pick a safe cell.",
@@ -231,7 +231,7 @@ while True:
                 while not lost:
                     if not first_move_done:
                         move = SAFE_Cell
-                        print("First Move.")
+                        #print("First Move.")
                         first_move_done = True
                     elif first_move_done:
                         move = ai.choose_move()
@@ -242,7 +242,11 @@ while True:
                     if move:
                         if game.is_mine(move):
                             lost = True
-                            print("AI Lost ------------------------------")
+                            if len(ai.get_unrevealed()) >=55:
+                                print("Failed in early steps")
+                            elif len(ai.get_unrevealed()) <=12:
+                                print("Failed in final steps")
+                            print("AI Lost ------------------------------ Identified Mines -", len(ai.mines))
                         else:
                             nearby = game.nearby_mines(move)
                             revealed.add(move)

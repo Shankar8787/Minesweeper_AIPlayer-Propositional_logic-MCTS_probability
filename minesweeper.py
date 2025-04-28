@@ -115,6 +115,8 @@ class Sentence():
     def __str__(self):
         return f"{self.cells} = {self.count}"
 
+
+
     def known_mines(self):
         """
         Returns the set of all cells in self.cells known to be mines.
@@ -181,6 +183,7 @@ class MinesweeperAI:
         updated = True
         while updated:
             updated = False
+
             for sentence, count in self.knowledge[:]:
                 known_mines = {cell for cell in sentence if cell in self.mines}
                 known_safes = {cell for cell in sentence if cell in self.safe_moves}
@@ -195,6 +198,15 @@ class MinesweeperAI:
                         self.mark_mine(cell)
                     self.knowledge.remove((sentence, count))
                     updated = True
+
+    def get_unrevealed(self):
+        """
+        Returns a list of all cells that are not revealed and not marked as mines.
+        """
+        return [
+            (i, j) for i in range(self.height) for j in range(self.width)
+            if (i, j) not in self.moves_made and (i, j) not in self.mines
+        ]
 
 
     def make_safe_move(self):
@@ -242,7 +254,7 @@ class MinesweeperAI:
         available_safes = self.safe_moves - self.moves_made
         if available_safes:
             move = available_safes.pop()
-            print("CSP Move: Found logical safe move:", move)
+            #print("CSP Move: Found logical safe move:", move)
             return move
 
         return None
@@ -283,10 +295,7 @@ class MinesweeperAI:
         Find an unrevealed cell adjacent to a known mine where the nearby knowledge count is 1.
         """
 
-        unrevealed = [
-            (i, j) for i in range(self.height) for j in range(self.width)
-            if (i, j) not in self.moves_made and (i, j) not in self.mines
-        ]
+        unrevealed = self.get_unrevealed()
 
         for cell in unrevealed:
             for dx in [-1, 0, 1]:
@@ -301,7 +310,7 @@ class MinesweeperAI:
                             # Check knowledge about the neighbor
                             for sentence, count in self.knowledge:
                                 if neighbor in sentence and count == 1:
-                                    print(f"Overlapping mine move found: {cell}")
+                                    #print(f"Overlapping mine move found: {cell}")
                                     return cell
 
         return None
@@ -332,8 +341,8 @@ class MinesweeperAI:
                 cell_probs[cell] = (cell_probs[cell] + likelihood) / 2
 
         safest_cell = min(cell_probs, key=lambda cell: cell_probs[cell])
-        print(cell_probs[safest_cell])
-        if cell_probs[safest_cell] >=0.8:
+        #print(cell_probs[safest_cell])
+        if cell_probs[safest_cell] >=0.8 or len(unrevealed) ==63:
             return None
         else:
             return safest_cell
@@ -425,20 +434,19 @@ class MinesweeperAI:
         # 1. Try a known safe move first
         move = self.make_safe_move()
         if move:
-            print("Choosing known safe move:", move)
+            #print("Choosing known safe move:", move)
             return move
 
         # 2. Try CSP logical inference
         move = self.csp_move()
         if move:
-            print("Choosing CSP logical move:", move)
+            #print("Choosing CSP logical move:", move)
             return move
 
         # 3. Prepare unrevealed cells
-        unrevealed = [(i, j) for i in range(self.height) for j in range(self.width)
-                      if (i, j) not in self.moves_made and (i, j) not in self.mines]
+        unrevealed = self.get_unrevealed()
 
-        print(len(unrevealed), len(self.mines))
+        #print(len(unrevealed), len(self.mines))
 
         if not unrevealed or len(unrevealed)+len(self.mines) == self.total_mines:
             for cell in unrevealed:
@@ -451,9 +459,10 @@ class MinesweeperAI:
         self.infer_overlap_mines()
         move = self.overlapping_mine()
         if move:
-            print(f"Choosing low risk nearby move from {len(unrevealed)} options:", move)
+            #print(f"Choosing low risk nearby move from {len(unrevealed)} options:", move)
             return move
 
+        unrevealed = self.get_unrevealed()
         if not unrevealed or len(unrevealed)+len(self.mines) == self.total_mines:
             for cell in unrevealed:
                 self.mines.add(cell)
@@ -462,13 +471,13 @@ class MinesweeperAI:
         # 5. Else use bayesian inference
         move = self.bayesian_inference(unrevealed)
         if move:
-            print(f"Choosing Bayesian move from {len(unrevealed)} options:", move)
+            #print(f"Choosing Bayesian move from {len(unrevealed)} options:", move)
             return move
 
         # 6. Else use Monte Carlo search
         move = self.monte_carlo_search(unrevealed)
         if move:
-            print("Choosing Monte Carlo move:", move)
+            #print("Choosing Monte Carlo move:", move)
             return move
 
         return None  # No move possible
