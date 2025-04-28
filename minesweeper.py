@@ -1,8 +1,5 @@
 import itertools
 import random
-from itertools import product
-import math
-
 
 class Minesweeper:
     """
@@ -11,14 +8,14 @@ class Minesweeper:
     def __init__(self, height=8, width=8, mines=5, safe_cell=(3, 3)):
         self.height = height
         self.width = width
-        self.total_mines = mines
+        self.totalMines = mines
         self.safe_cell = safe_cell
         self.mines = set()
         self.board = []
         for i in range(self.height):
             row = [False] * self.width
             self.board.append(row)
-        while len(self.mines) < self.total_mines:
+        while len(self.mines) < self.totalMines:
             i = random.randrange(height)
             j = random.randrange(width)
             if (i, j) != self.safe_cell and not self.board[i][j]:
@@ -94,10 +91,10 @@ class MinesweeperAI:
     def __init__(self, height, width, mines):
         self.height = height
         self.width = width
-        self.moves_made = set()
+        self.movesMade = set()
         self.mines = set()
-        self.total_mines = mines
-        self.safe_moves = set()
+        self.totalMines = mines
+        self.safeMoves = set()
         self.knowledge = []
 
     def mark_mine(self, cell):
@@ -109,18 +106,18 @@ class MinesweeperAI:
                 sentence[1] -= 1
 
     def mark_safe(self, cell):
-        self.safe_moves.add(cell)
+        self.safeMoves.add(cell)
         # Update all sentences to reflect the new safe cell
         for sentence in self.knowledge:
             sentence[0].discard(cell)
 
     def add_knowledge(self, cell, count):
-        self.moves_made.add(cell)
+        self.movesMade.add(cell)
         self.mark_safe(cell)
         new_sentence = {(i, j) for i in range(cell[0] - 1, cell[0] + 2)
                         for j in range(cell[1] - 1, cell[1] + 2)
                         if 0 <= i < self.height and 0 <= j < self.width
-                        and (i, j) not in self.moves_made}
+                        and (i, j) not in self.movesMade}
         if new_sentence:
             self.knowledge.append([new_sentence, count])
         self.update_knowledge()
@@ -132,7 +129,7 @@ class MinesweeperAI:
             for sentence in self.knowledge[:]:
                 cells, count = sentence
                 known_mines = cells & self.mines
-                known_safes = cells & self.safe_moves
+                known_safes = cells & self.safeMoves
                 cells = cells - known_mines - known_safes
                 count -= len(known_mines)
                 if count < 0 or count > len(cells):
@@ -163,10 +160,10 @@ class MinesweeperAI:
 
     def get_unrevealed(self):
         return [(i, j) for i in range(self.height) for j in range(self.width)
-                if (i, j) not in self.moves_made and (i, j) not in self.mines]
+                if (i, j) not in self.movesMade and (i, j) not in self.mines]
 
     def make_safe_move(self):
-        safe_choices = self.safe_moves - self.moves_made
+        safe_choices = self.safeMoves - self.movesMade
         return random.choice(tuple(safe_choices)) if safe_choices else None
 
     def csp_move(self):
@@ -188,14 +185,14 @@ class MinesweeperAI:
                         safes.update(new_cells)
                     elif len(new_cells) == new_count:
                         mines.update(new_cells)
-        newly_safe = safes - self.moves_made - self.safe_moves
-        newly_mine = mines - self.moves_made - self.mines
+        newly_safe = safes - self.movesMade - self.safeMoves
+        newly_mine = mines - self.movesMade - self.mines
         for cell in newly_safe:
             self.mark_safe(cell)
         for cell in newly_mine:
             self.mark_mine(cell)
         self.update_knowledge()
-        available_safes = self.safe_moves - self.moves_made
+        available_safes = self.safeMoves - self.movesMade
         return random.choice(tuple(available_safes)) if available_safes else None
 
     def partial_overlap_inference(self):
@@ -260,13 +257,13 @@ class MinesweeperAI:
     def bayesian_inference(self, unrevealed):
         if not unrevealed:
             return None
-        total_mines_left = self.total_mines - len(self.mines)
-        prior = total_mines_left / len(unrevealed)
+        totalMines_left = self.totalMines - len(self.mines)
+        prior = totalMines_left / len(unrevealed)
         cell_probs = {cell: prior for cell in unrevealed}
         for sentence, count in self.knowledge:
             if not sentence:
                 continue
-            unknown_cells = sentence - self.mines - self.safe_moves
+            unknown_cells = sentence - self.mines - self.safeMoves
             if not unknown_cells:
                 continue
             likelihood = count / len(unknown_cells)
@@ -281,9 +278,9 @@ class MinesweeperAI:
         if not unrevealed:
             return None
         move_scores = {cell: 0 for cell in unrevealed}
-        mines_left = self.total_mines - len(self.mines)
+        mines_left = self.totalMines - len(self.mines)
         known_mines = set(self.mines)
-        known_safes = set(self.safe_moves)
+        known_safes = set(self.safeMoves    )
         candidates = [cell for cell in unrevealed if cell not in known_mines and cell not in known_safes]
         if not candidates:
             return None
@@ -312,7 +309,7 @@ class MinesweeperAI:
         safest_cell = max(move_scores, key=lambda cell: move_scores[cell])
         return safest_cell
 
-    def choose_move(self):
+    def smart_move(self):
         """
         AI Agent:
         Logical moves
@@ -326,48 +323,48 @@ class MinesweeperAI:
             1. Bayesian inference, return None when probability is high
             2. Monte Carlo search, return cell after 10000 simulations
         """
-        # 1. Try a known safe move
+        #Try a known safe move
         move = self.make_safe_move()
         if move:
             return move
 
-        # 2. Try CSP logical inference
+        #Try CSP logical inference
         move = self.csp_move()
         if move:
             return move
 
-        # 3. Try partial overlap inference
+        #Try partial overlap inference
         self.partial_overlap_inference()
         move = self.make_safe_move()
         if move:
             return move
 
-        # 4. Check unrevealed cells
+        #Check unrevealed cells
         unrevealed = self.get_unrevealed()
-        if not unrevealed or len(unrevealed) + len(self.mines) == self.total_mines:
+        if not unrevealed or len(unrevealed) + len(self.mines) == self.totalMines:
             for cell in unrevealed:
                 self.mark_mine(cell)
             return None
 
-        # 5. Try to infer mines and find low-risk nearby move
+        # Try to infer mines and find low-risk nearby move
         self.infer_overlap_mines()
         move = self.overlapping_mine()
         if move:
             return move
 
-        # 6. Check unrevealed cells again
+        #Check unrevealed cells again
         unrevealed = self.get_unrevealed()
-        if not unrevealed or len(unrevealed) + len(self.mines) == self.total_mines:
+        if not unrevealed or len(unrevealed) + len(self.mines) == self.totalMines:
             for cell in unrevealed:
                 self.mark_mine(cell)
             return None
 
-        # 7. Use Bayesian inference
+        #Use Bayesian inference
         move = self.bayesian_inference(unrevealed)
         if move:
             return move
 
-        # 8. Use Monte Carlo search
+        #Use Monte Carlo search
         move = self.monte_carlo_search(unrevealed)
         if move:
             return move

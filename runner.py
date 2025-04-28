@@ -4,9 +4,9 @@ import time
 
 from minesweeper import Minesweeper, MinesweeperAI
 
-HEIGHT = 8
-WIDTH = 8
-MINES = 8
+HEIGHT = 9
+WIDTH = 9
+MINES = 10
 SAFE_Cell = (3, 3)
 
 # Colors
@@ -201,7 +201,7 @@ while True:
                         print("First Move.")
                         first_move_done = True
                     elif first_move_done:
-                        move = ai.choose_move()
+                        move = ai.smart_move()
                     if move is None:
                         flags = ai.mines.copy()
                         print("No moves left to make.")
@@ -234,7 +234,7 @@ while True:
                         #print("First Move.")
                         first_move_done = True
                     elif first_move_done:
-                        move = ai.choose_move()
+                        move = ai.smart_move()
                     if move is None:
                         flags = ai.mines.copy()
                         print("No moves left to make.")
