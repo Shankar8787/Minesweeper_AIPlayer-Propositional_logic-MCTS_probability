@@ -78,7 +78,8 @@ The agent utilizes a combination of logical inference, advanced constraint-solvi
 
 - **Propositional Logic** for safe and mine deduction.
 - **Constraint Propagation** to infer additional knowledge.
-- **Subset-Superset Analysis** for overlap inference.
+- **Subset-Superset Analysis** for overlap inference of mines.
+- **Partial Overlap Analysis** for overlap cells from centence to determine safe cells.
 - **Bayesian Reasoning** to estimate risk.
 - **Monte Carlo Simulation** for probabilistic decision-making.
 - **Integration with graphical user interfaces (e.g., Tkinter, Pygame).
