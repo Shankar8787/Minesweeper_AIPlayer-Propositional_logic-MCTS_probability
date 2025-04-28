@@ -88,9 +88,9 @@ The agent utilizes a combination of logical inference, advanced constraint-solvi
 
 ## Results
 
-- Begginer - upto 80% success (9*9 board with 10 mines)
-- Intermittent - upto 50% success (16*16 board with 40 mines)
-- Expert - upto 10% success (30*16 board with 99 mines)
+- Begginer     -   Upto 80% success rate (9*9 board with 10 mines)
+- Intermittent -   Upto 50% success rate (16*16 board with 40 mines)
+- Expert       -   Upto 10% success rate (30*16 board with 99 mines)
 
 ---
 
