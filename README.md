@@ -1,62 +1,70 @@
-# Minesweeper AI
+Minesweeper AI
+A Minesweeper-playing artificial intelligence agent that leverages propositional logic, constraint satisfaction, and probabilistic reasoning to efficiently navigate the Minesweeper game board, minimizing the risk of triggering mines.
 
-Welcome to Minesweeper! In this project, we've built an AI that can play the classic puzzle game Minesweeper. The goal of Minesweeper is to identify the locations of hidden mines on a grid while avoiding detonating any of them.
+Overview
+This project implements a Minesweeper AI agent capable of autonomously playing the game.
+The agent utilizes a combination of logical inference, advanced constraint-solving techniques, and probabilistic analysis to make optimal decisions throughout gameplay.
 
-## How Minesweeper Works
+How the AI Works
+Safe First Move:
+The AI always initiates gameplay by selecting a guaranteed safe cell.
 
-Minesweeper consists of a grid of cells, where some cells contain hidden mines. Clicking on a cell with a mine causes the game to end. Safe cells reveal a number indicating how many neighboring cells contain mines.
+Logical Inference:
+The agent identifies safe cells and mines through propositional logic based on revealed information.
+It applies Constraint Satisfaction Problem (CSP) techniques to deduce further information from the current knowledge base.
 
-For example, in a 3x3 Minesweeper game, the numbers indicate how many neighboring cells are mines. Armed with this information, a logical player can deduce which cells contain mines and which are safe.
+Overlap-Based Reasoning:
+When sentences in the knowledge base overlap, the agent infers additional mines by analyzing the relationships between overlapping sets.
 
-## Propositional Logic
+Probabilistic Decision Making:
+If logical moves are exhausted:
+Bayesian Inference estimates the probability of each unrevealed cell containing a mine.
+Monte Carlo Simulation runs numerous simulated game states to statistically determine the safest available move.
 
-Our AI represents its knowledge about the Minesweeper game using propositional logic. Each cell is treated as a propositional variable that is true if the cell contains a mine and false otherwise.
+Endgame Handling:
+If the number of unrevealed cells equals the number of undiscovered mines, the AI marks all remaining cells as mines.
 
-The AI gains knowledge as safe cells are clicked and numbers are revealed. For instance, if a cell with the number 1 is revealed, the AI knows that one of its neighboring cells must be a mine. We represent this knowledge as a logical sentence, e.g., {A, B, C} = 1, indicating that out of cells A, B, and C, exactly one of them is a mine.
+Project Structure
+Component	        Description
+Minesweeper	      Represents the game board, mine placement, and game logic.
+Sentence	        Represents logical statements about sets of cells and mine counts.
+MinesweeperAI	      Implements the AI agent, including logic inference and decision-making strategies.
 
-## Knowledge Representation
+Key AI Methods
+make_safe_move(): Selects a move from cells already identified as safe.
+csp_move(): Applies constraint satisfaction to infer safe cells or mines.
+infer_overlap_mines(): Identifies additional mines through overlap analysis.
+bayesian_inference(): Estimates mine probabilities based on current knowledge.
+monte_carlo_search(): Simulates numerous board states to evaluate safest moves.
+choose_move(): Executes the complete decision-making pipeline to select the next move.
 
-We represent AI knowledge using the Sentence class. Each sentence contains a set of cells involved and a count of how many of those cells are mines. The AI's knowledge base is a collection of such sentences.
+Instructions for Use
+Start the game by triggering the AI to play.
+The AI will perform an initial safe move.
+The AI continues to play by applying logical reasoning or probabilistic models when necessary.
+The final result (win/loss) is displayed at the end of the game.
+To play again, reset the game board.
 
-The MinesweeperAI class maintains the AI's knowledge and performs inferences based on that knowledge. The class keeps track of safe cells, known mines, and moves made. The AI uses logical deductions to make safe moves whenever possible.
+Rule Summary
+Click the Play button to begin.
+The AI starts with a guaranteed safe move.
+It applies logical reasoning to deduce safe cells and mines.
+If necessary, it uses probability to minimize risk.
+The game result is presented upon completion; reset the board to start a new game.
 
-## Monte Carlo Propability determination for random move
+Techniques Employed
+Propositional Logic for safe and mine deduction.
+Constraint Propagation to infer additional knowledge.
+Subset-Superset Analysis for overlap inference.
+Bayesian Reasoning to estimate risk.
+Monte Carlo Simulation for probabilistic decision-making.
+Integration with graphical user interfaces (Pygame).
 
-## Getting Started
+Potential Future Enhancements
+Integration with graphical user interfaces (e.g., Tkinter, Pygame).
+Optimization for larger, more complex boards.
 
-To play Minesweeper or let the AI play for you:
-
-1. Clone this repository to your local machine using `git clone`.
-
-2. Open `minesweeper.py` to explore the provided classes and complete the AI's logic.
-
-3. Once all required functions in `minesweeper.py` are implemented, run `python runner.py`.
-
-4. Enjoy playing Minesweeper or watch the AI in action!
-
-### Functionality 1
-1. `known_mines`: This function returns a set of all the cells in the sentence that are known to be mines.
-
-2. `known_safes`: This function returns a set of all the cells in the sentence that are known to be safe.
-
-3. `mark_mine`: This function updates the sentence to indicate that a cell is a mine.
-
-4. `mark_safe`: This function updates the sentence to indicate that a cell is safe.
-
-The MinesweeperAI class maintains the AI's knowledge and performs inferences based on that knowledge. The class keeps track of safe cells, known mines, and moves made. The AI uses logical deductions to make safe moves whenever possible.
-
-### Functionality 2
-
-1. `add_knowledge`: This function updates the AI's knowledge based on a new cell and its count. It marks the cell as one of the moves made, a safe cell, and updates any relevant sentences to reflect this information.
-
-2. `make_safe_move`: This function returns a move that is known to be safe. If no safe move can be guaranteed, it returns None.
-
-3. `make_random_move`: This function returns a random move that has not been made and is not known to be a mine. If no such moves are possible, it returns None.
-
-
-## AI Strategy
-
-The AI will update its knowledge base by inferring new sentences based on the revealed cells. It will make safe moves whenever possible and resort to random moves if no safe move can be guaranteed.
+Incorporation of reinforcement learning for adaptive gameplay.
 
 
 ## License
